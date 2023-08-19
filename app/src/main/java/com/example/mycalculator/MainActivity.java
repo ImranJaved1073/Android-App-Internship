@@ -3,6 +3,7 @@ package com.example.mycalculator;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.TextView;
 
@@ -16,7 +17,7 @@ import org.mozilla.javascript.Scriptable;
 public class MainActivity extends AppCompatActivity {
 
     ArrayList<MaterialButton> btnList = new ArrayList<>();
-    MaterialButton btnEqual, btnClear,btnAllClear;
+    MaterialButton btnEqual, btnClear, btnAllClear;
     TextView inputTxt, outputTxt;
     String data;
 
@@ -50,15 +51,35 @@ public class MainActivity extends AppCompatActivity {
             btn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String data = inputTxt.getText().toString();
                     String btnTxt = btn.getText().toString();
+                    data = inputTxt.getText().toString();
                     String concat = data + btnTxt;
                     inputTxt.setText(concat);
+
+                    data = inputTxt.getText().toString();
+                    if (data.endsWith("+") || data.endsWith("-") || data.endsWith("×") || data.endsWith("÷")) {
+                        outputTxt.setText("");
+                    } else if (data.length() == 0) {
+                        outputTxt.setText("0");
+                    } else {
+                        data = evaluateExpression(data);
+                        outputTxt.setText(data);
+                    }
+
                 }
             });
         }
 
-
+        inputTxt.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                    evaluateExpression(inputTxt.getText().toString());
+                    return true;
+                }
+                return false;
+            }
+        });
 
         btnEqual = findViewById(R.id.btn_equals);
         btnAllClear = findViewById(R.id.btn_allclear);
@@ -79,6 +100,15 @@ public class MainActivity extends AppCompatActivity {
                 if (data.length() > 0) {
                     data = data.substring(0, data.length() - 1);
                     inputTxt.setText(data);
+
+                    if (data.endsWith("+") || data.endsWith("-") || data.endsWith("×") || data.endsWith("÷")) {
+                        outputTxt.setText("");
+                    } else if (data.length() == 0) {
+                        outputTxt.setText("0");
+                    } else {
+                        data = evaluateExpression(data);
+                        outputTxt.setText(data);
+                    }
                 }
             }
         });
@@ -86,37 +116,38 @@ public class MainActivity extends AppCompatActivity {
         btnEqual.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                data = inputTxt.getText().toString();
-
-                if (data.length() == 0)
-                    return;
-
-                data = data.replaceAll("×", "*");
-                data = data.replaceAll("%", "/100");
-                data = data.replaceAll("÷", "/");
-
-                try{
-                    Context rhino = Context.enter();
-                    rhino.setOptimizationLevel(-1);
-
-                    String finalResult;
-
-                    Scriptable scriptable = rhino.initStandardObjects();
-                    finalResult = rhino.evaluateString(scriptable, data, "Javsscript", 1, null).toString();
-                    if(finalResult.endsWith(".0"))
-                        finalResult = finalResult.substring(0, finalResult.length() - 2);
-                    outputTxt.setText(finalResult);
-                }
-
-                catch (Exception e){
-                    outputTxt.setText("");
-                    inputTxt.setText("");
-                }
-
-
+                String result = evaluateExpression(inputTxt.getText().toString());
+                inputTxt.setText(result);
+                outputTxt.setText("");
             }
         });
+    }
 
+    private String evaluateExpression(String expression) {
+        if (expression.length() == 0)
+            return "";
 
+        data = expression;
+        data = data.replaceAll("×", "*");
+        data = data.replaceAll("%", "/100");
+        data = data.replaceAll("÷", "/");
+
+        try {
+            Context rhino = Context.enter();
+            rhino.setOptimizationLevel(-1);
+
+            String finalResult;
+
+            Scriptable scriptable = rhino.initStandardObjects();
+            finalResult = rhino.evaluateString(scriptable, data, "Javsscript", 1, null).toString();
+            if (finalResult.endsWith(".0"))
+                finalResult = finalResult.substring(0, finalResult.length() - 2);
+
+            inputTxt.setText(expression);
+            return finalResult;
+        } catch (Exception e) {
+            inputTxt.setText("");
+            return "Error";
+        }
     }
 }
