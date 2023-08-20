@@ -2,10 +2,12 @@ package com.example.mycalculator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
 
@@ -18,8 +20,10 @@ import org.mozilla.javascript.Scriptable;
 public class MainActivity extends AppCompatActivity {
 
     ArrayList<MaterialButton> btnList = new ArrayList<>();
-    MaterialButton btnEqual, btnClear, btnAllClear;
+    MaterialButton btnEqual, btnClear, btnAllClear, btnbracket;
     TextView inputTxt, outputTxt;
+
+    int leftBracket = 0, rightBracket = 0;
     String data;
 
     @Override
@@ -41,25 +45,46 @@ public class MainActivity extends AppCompatActivity {
         btnList.add(findViewById(R.id.btn_8));
         btnList.add(findViewById(R.id.btn_9));
         btnList.add(findViewById(R.id.btn_dot));
-        btnList.add(findViewById(R.id.btn_close_bracket));
-        btnList.add(findViewById(R.id.btn_open_bracket));
         btnList.add(findViewById(R.id.btn_plus));
         btnList.add(findViewById(R.id.btn_minus));
         btnList.add(findViewById(R.id.btn_multiply));
         btnList.add(findViewById(R.id.btn_divide));
+        btnList.add(findViewById(R.id.btn_percent));
 
         for (final MaterialButton btn : btnList) {
             btn.setOnClickListener(new View.OnClickListener() {
+                @SuppressLint("SetTextI18n")
                 @Override
                 public void onClick(View v) {
 
                     String btnTxt = btn.getText().toString();
                     data = inputTxt.getText().toString();
 
+                    if (data.isEmpty() && btnTxt.matches("[+\\-×÷%]")) {
+                        Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
+                        return;
+                    } else if (data.isEmpty() && btnTxt.equals(".")) {
+                        inputTxt.setText("0" + btnTxt);
+                        return;
+                    }
+
+                    if (data.length() > 0) {
+                        String lastChar = data.substring(data.length() - 1);
+                        if (lastChar.matches("[+\\-×÷]") && btnTxt.matches("[+\\-×÷]")) {
+                            return;
+                        } else if (lastChar.equals("%") && btnTxt.matches("[0-9]")) {
+                            inputTxt.setText(data + "×" + btnTxt);
+                            return;
+                        } else if (lastChar.equals(".") && btnTxt.equals(".")) {
+                            return;
+                        }
+                    }
+
                     String concat = data + btnTxt;
                     inputTxt.setText(concat);
                     data = inputTxt.getText().toString();
-                    if (data.endsWith("+") || data.endsWith("-") || data.endsWith("×") || data.endsWith("÷")) {
+                    String lastChar = data.substring(data.length() - 1);
+                    if (lastChar.matches("[+\\-×÷%]")) {
                         outputTxt.setText("");
                     } else if (data.length() == 0) {
                         outputTxt.setText("0");
@@ -90,34 +115,73 @@ public class MainActivity extends AppCompatActivity {
         btnEqual = findViewById(R.id.btn_equals);
         btnAllClear = findViewById(R.id.btn_allclear);
         btnClear = findViewById(R.id.btn_clear);
+        btnbracket = findViewById(R.id.btn_bracket);
+
+        btnbracket.setOnClickListener(new View.OnClickListener() {
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onClick(View v) {
+                String txt = inputTxt.getText().toString();
+                if (txt.length() == 0) {
+                    inputTxt.setText("(");
+                    leftBracket++;
+                } else {
+                    String lastChar = txt.substring(txt.length() - 1);
+                    if (lastChar.matches("[+\\-×÷]")) {
+                        inputTxt.setText(txt + "(");
+                        leftBracket++;
+                    } else if (lastChar.equals("(")) {
+                        inputTxt.setText(txt + "(");
+                        leftBracket++;
+                    } else if (lastChar.matches("[0-9]") && (leftBracket != 0 && leftBracket > rightBracket)) {
+                        inputTxt.setText(txt + ")");
+                        rightBracket++;
+                    } else if (lastChar.equals(")") && (leftBracket != rightBracket)) {
+                        inputTxt.setText(txt + ")");
+                        rightBracket++;
+                    } else {
+                        inputTxt.setText(txt + "×(");
+                        leftBracket++;
+                    }
+                }
+            }
+        });
 
         btnAllClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 inputTxt.setText("");
                 outputTxt.setText("0");
+                leftBracket = 0;
+                rightBracket = 0;
             }
         });
 
         btnClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                data = inputTxt.getText().toString();
-                if (data.length() > 0) {
-                    data = data.substring(0, data.length() - 1);
-                    inputTxt.setText(data);
-
-                    if (data.endsWith("+") || data.endsWith("-") || data.endsWith("×") || data.endsWith("÷")) {
+                String txt = inputTxt.getText().toString();
+                if (txt.length() > 0) {
+                    String lastChar = txt.substring(txt.length() - 1);
+                    if (lastChar.equals("(")) {
+                        leftBracket--;
+                    } else if (lastChar.equals(")")) {
+                        rightBracket--;
+                    }
+                    txt = txt.substring(0, txt.length() - 1);
+                    inputTxt.setText(txt);
+                    lastChar = txt.length() > 0 ? txt.substring(txt.length() - 1) : "";
+                    if (lastChar.matches("[+\\-×÷%]")) {
                         outputTxt.setText("");
-                    } else if (data.length() == 0) {
+                    } else if (txt.length() == 0) {
                         outputTxt.setText("0");
                     } else {
-                        String res = evaluateExpression(data);
+                        String res = evaluateExpression(txt);
                         if (!res.equals("Err")) {
                             outputTxt.setText(res);
                         } else {
                             outputTxt.setText("");
-                            inputTxt.setText(data);
+                            inputTxt.setText(txt);
                         }
                     }
                 }
@@ -127,7 +191,15 @@ public class MainActivity extends AppCompatActivity {
         btnEqual.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String result = evaluateExpression(inputTxt.getText().toString());
+                String result = inputTxt.getText().toString();
+                if (result.length() > 0) {
+                    String lastChar = result.substring(result.length() - 1);
+                    if (lastChar.matches("[+\\-×÷()]")) {
+                        Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                }
+                result = evaluateExpression(inputTxt.getText().toString());
                 inputTxt.setText(result);
                 outputTxt.setText("");
             }
@@ -153,12 +225,17 @@ public class MainActivity extends AppCompatActivity {
             String finalResult;
 
             Scriptable scriptable = rhino.initStandardObjects();
-            finalResult = rhino.evaluateString(scriptable, cleanedExpression, "Javsscript", 1, null).toString();
-            if (finalResult.endsWith(".0"))
-                finalResult = finalResult.substring(0, finalResult.length() - 2);
+            if (!cleanedExpression.isEmpty()) {
+                finalResult = rhino.evaluateString(scriptable, cleanedExpression, "Javsscript", 1, null).toString();
+                if (finalResult.endsWith(".0"))
+                    finalResult = finalResult.substring(0, finalResult.length() - 2);
 
-            inputTxt.setText(data);
-            return finalResult;
+                inputTxt.setText(data);
+                return finalResult;
+            } else {
+                inputTxt.setText(data);
+                return "";
+            }
         } catch (Exception e) {
             return "Err";
         }

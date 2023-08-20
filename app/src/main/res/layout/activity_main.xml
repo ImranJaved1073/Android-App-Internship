@@ -68,9 +68,9 @@
                 android:textSize="32dp"
                 android:textColor="@color/white"
                 android:layout_margin="12dp"
-                android:id="@+id/btn_open_bracket"
-                android:backgroundTint="#A1A1A1"
-                android:text="(" />
+                android:id="@+id/btn_bracket"
+                android:backgroundTint="#3F51B5"
+                android:text="()" />
             <com.google.android.material.button.MaterialButton
                 android:layout_width="72dp"
                 android:layout_height="72dp"
@@ -79,9 +79,9 @@
                 android:textSize="32dp"
                 android:textColor="@color/white"
                 android:layout_margin="12dp"
-                android:backgroundTint="#A1A1A1"
-                android:id="@+id/btn_close_bracket"
-                android:text=")" />
+                android:backgroundTint="#93CD96"
+                android:id="@+id/btn_percent"
+                android:text="%" />
             <com.google.android.material.button.MaterialButton
                 android:layout_width="72dp"
                 android:layout_height="72dp"
