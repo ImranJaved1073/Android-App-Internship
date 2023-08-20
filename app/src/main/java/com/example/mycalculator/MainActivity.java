@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.google.android.material.button.MaterialButton;
 
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -51,11 +52,12 @@ public class MainActivity extends AppCompatActivity {
             btn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+
                     String btnTxt = btn.getText().toString();
                     data = inputTxt.getText().toString();
+
                     String concat = data + btnTxt;
                     inputTxt.setText(concat);
-
                     data = inputTxt.getText().toString();
                     if (data.endsWith("+") || data.endsWith("-") || data.endsWith("×") || data.endsWith("÷")) {
                         outputTxt.setText("");
@@ -63,7 +65,10 @@ public class MainActivity extends AppCompatActivity {
                         outputTxt.setText("0");
                     } else {
                         data = evaluateExpression(data);
-                        outputTxt.setText(data);
+                        if (!data.equals("Err")) {
+                            outputTxt.setText(data);
+                        }
+                        inputTxt.setText(concat);
                     }
 
                 }
@@ -74,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    evaluateExpression(inputTxt.getText().toString());
+                    data = evaluateExpression(inputTxt.getText().toString());
+                    outputTxt.setText(data);
                     return true;
                 }
                 return false;
@@ -106,8 +112,13 @@ public class MainActivity extends AppCompatActivity {
                     } else if (data.length() == 0) {
                         outputTxt.setText("0");
                     } else {
-                        data = evaluateExpression(data);
-                        outputTxt.setText(data);
+                        String res = evaluateExpression(data);
+                        if (!res.equals("Err")) {
+                            outputTxt.setText(res);
+                        } else {
+                            outputTxt.setText("");
+                            inputTxt.setText(data);
+                        }
                     }
                 }
             }
@@ -128,9 +139,12 @@ public class MainActivity extends AppCompatActivity {
             return "";
 
         data = expression;
-        data = data.replaceAll("×", "*");
-        data = data.replaceAll("%", "/100");
-        data = data.replaceAll("÷", "/");
+        expression = expression.replaceAll("×", "*");
+        expression = expression.replaceAll("%", "/100");
+        expression = expression.replaceAll("÷", "/");
+
+
+        String cleanedExpression = removeUnmatchedOpenBrackets(expression);
 
         try {
             Context rhino = Context.enter();
@@ -139,15 +153,35 @@ public class MainActivity extends AppCompatActivity {
             String finalResult;
 
             Scriptable scriptable = rhino.initStandardObjects();
-            finalResult = rhino.evaluateString(scriptable, data, "Javsscript", 1, null).toString();
+            finalResult = rhino.evaluateString(scriptable, cleanedExpression, "Javsscript", 1, null).toString();
             if (finalResult.endsWith(".0"))
                 finalResult = finalResult.substring(0, finalResult.length() - 2);
 
-            inputTxt.setText(expression);
+            inputTxt.setText(data);
             return finalResult;
         } catch (Exception e) {
-            inputTxt.setText("");
-            return "Error";
+            return "Err";
         }
+    }
+
+    private static String removeUnmatchedOpenBrackets(String expression) {
+        Stack<Integer> stack = new Stack<>();
+        StringBuilder result = new StringBuilder(expression);
+
+        for (int i = 0; i < result.length(); i++) {
+            char c = result.charAt(i);
+            if (c == '(') {
+                stack.push(i);
+            } else if (c == ')' && !stack.isEmpty()) {
+                stack.pop();
+            }
+        }
+
+        while (!stack.isEmpty()) {
+            int index = stack.pop();
+            result.deleteCharAt(index);
+        }
+
+        return result.toString();
     }
 }
