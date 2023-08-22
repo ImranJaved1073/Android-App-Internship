@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     int leftBracket = 0, rightBracket = 0;
     String data;
 
+    @SuppressLint("SetTextI18n")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,64 +52,63 @@ public class MainActivity extends AppCompatActivity {
         btnList.add(findViewById(R.id.btn_percent));
 
         for (final MaterialButton btn : btnList) {
-            btn.setOnClickListener(new View.OnClickListener() {
-                @SuppressLint("SetTextI18n")
-                @Override
-                public void onClick(View v) {
+            btn.setOnClickListener(v -> {
 
-                    String btnTxt = btn.getText().toString();
-                    data = inputTxt.getText().toString();
+                String btnTxt = btn.getText().toString();
+                data = inputTxt.getText().toString();
 
-                    if (data.isEmpty() && btnTxt.matches("[+\\-×÷%]")) {
-                        Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
-                        return;
-                    } else if (data.isEmpty() && btnTxt.equals(".")) {
-                        inputTxt.setText("0" + btnTxt);
-                        return;
-                    }
-
-                    if (data.length() > 0) {
-                        String lastChar = data.substring(data.length() - 1);
-                        if (lastChar.matches("[+\\-×÷]") && btnTxt.matches("[+\\-×÷]")) {
-                            return;
-                        } else if (lastChar.equals("%") && btnTxt.matches("[0-9]")) {
-                            inputTxt.setText(data + "×" + btnTxt);
-                            return;
-                        } else if (lastChar.equals(".") && btnTxt.equals(".")) {
-                            return;
-                        }
-                    }
-
-                    String concat = data + btnTxt;
-                    inputTxt.setText(concat);
-                    data = inputTxt.getText().toString();
-                    String lastChar = data.substring(data.length() - 1);
-                    if (lastChar.matches("[+\\-×÷%]")) {
-                        outputTxt.setText("");
-                    } else if (data.length() == 0) {
-                        outputTxt.setText("0");
-                    } else {
-                        data = evaluateExpression(data);
-                        if (!data.equals("Err")) {
-                            outputTxt.setText(data);
-                        }
-                        inputTxt.setText(concat);
-                    }
-
+                if (data.isEmpty() && btnTxt.matches("[+\\-×÷%]")) {
+                    Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
+                    return;
+                } else if (data.isEmpty() && btnTxt.equals(".")) {
+                    inputTxt.setText("0" + btnTxt);
+                    return;
                 }
+
+                if (data.length() > 0) {
+                    String lastChar = data.substring(data.length() - 1);
+                    if (lastChar.matches("[+\\-×÷%]") && btnTxt.matches("[+\\-×÷%.]")) {
+                        inputTxt.setText(data.substring(0, data.length() - 1) + btnTxt);
+                        return;
+                    } else if (lastChar.equals("%") && btnTxt.matches("[0-9]")) {
+                        inputTxt.setText(data + "×" + btnTxt);
+                        return;
+                    } else if (lastChar.equals(".")) {
+                        if(btnTxt.equals("."))
+                            return;
+                        else if(btnTxt.matches("[+\\-×÷%\\(\\)]")){
+                            inputTxt.setText(data.substring(0, data.length() - 1) + btnTxt);
+                            return;
+                        }
+                    }
+                }
+
+                String concat = data + btnTxt;
+                inputTxt.setText(concat);
+                data = inputTxt.getText().toString();
+                String lastChar = data.substring(data.length() - 1);
+                if (lastChar.matches("[+\\-×÷%]")) {
+                    outputTxt.setText("");
+                } else if (data.length() == 0) {
+                    outputTxt.setText("0");
+                } else {
+                    data = evaluateExpression(data);
+                    if (!data.equals("Err")) {
+                        outputTxt.setText(data);
+                    }
+                    inputTxt.setText(concat);
+                }
+
             });
         }
 
-        inputTxt.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
-                    data = evaluateExpression(inputTxt.getText().toString());
-                    outputTxt.setText(data);
-                    return true;
-                }
-                return false;
+        inputTxt.setOnKeyListener((v, keyCode, event) -> {
+            if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)) {
+                data = evaluateExpression(inputTxt.getText().toString());
+                outputTxt.setText(data);
+                return true;
             }
+            return false;
         });
 
         btnEqual = findViewById(R.id.btn_equals);
@@ -117,92 +116,86 @@ public class MainActivity extends AppCompatActivity {
         btnClear = findViewById(R.id.btn_clear);
         btnbracket = findViewById(R.id.btn_bracket);
 
-        btnbracket.setOnClickListener(new View.OnClickListener() {
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onClick(View v) {
-                String txt = inputTxt.getText().toString();
-                if (txt.length() == 0) {
-                    inputTxt.setText("(");
+        btnbracket.setOnClickListener(v -> {
+            String txt = inputTxt.getText().toString();
+            if(txt.length() != 0 ){
+                String lastChar = txt.substring(txt.length() - 1);
+                if (lastChar.equals(".")) {
+                    inputTxt.setText(txt.substring(0, txt.length() - 1));
+                    txt = inputTxt.getText().toString();
+                }
+            }
+            if (txt.length() == 0) {
+                inputTxt.setText("(");
+                leftBracket++;
+            } else {
+                String lastChar = txt.substring(txt.length() - 1);
+                if (lastChar.matches("[+\\-×÷]")) {
+                    inputTxt.setText(txt + "(");
                     leftBracket++;
+                } else if (lastChar.equals("(")) {
+                    inputTxt.setText(txt + "(");
+                    leftBracket++;
+                } else if (lastChar.matches("[0-9]") && (leftBracket != 0 && leftBracket > rightBracket)) {
+                    inputTxt.setText(txt + ")");
+                    rightBracket++;
+                } else if (lastChar.equals(")") && (leftBracket != rightBracket)) {
+                    inputTxt.setText(txt + ")");
+                    rightBracket++;
                 } else {
-                    String lastChar = txt.substring(txt.length() - 1);
-                    if (lastChar.matches("[+\\-×÷]")) {
-                        inputTxt.setText(txt + "(");
-                        leftBracket++;
-                    } else if (lastChar.equals("(")) {
-                        inputTxt.setText(txt + "(");
-                        leftBracket++;
-                    } else if (lastChar.matches("[0-9]") && (leftBracket != 0 && leftBracket > rightBracket)) {
-                        inputTxt.setText(txt + ")");
-                        rightBracket++;
-                    } else if (lastChar.equals(")") && (leftBracket != rightBracket)) {
-                        inputTxt.setText(txt + ")");
-                        rightBracket++;
-                    } else {
-                        inputTxt.setText(txt + "×(");
-                        leftBracket++;
-                    }
+                    inputTxt.setText(txt + "×(");
+                    leftBracket++;
                 }
             }
         });
 
-        btnAllClear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                inputTxt.setText("");
-                outputTxt.setText("0");
-                leftBracket = 0;
-                rightBracket = 0;
-            }
+        btnAllClear.setOnClickListener(v -> {
+            inputTxt.setText("");
+            outputTxt.setText("0");
+            leftBracket = 0;
+            rightBracket = 0;
         });
 
-        btnClear.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String txt = inputTxt.getText().toString();
-                if (txt.length() > 0) {
-                    String lastChar = txt.substring(txt.length() - 1);
-                    if (lastChar.equals("(")) {
-                        leftBracket--;
-                    } else if (lastChar.equals(")")) {
-                        rightBracket--;
-                    }
-                    txt = txt.substring(0, txt.length() - 1);
-                    inputTxt.setText(txt);
-                    lastChar = txt.length() > 0 ? txt.substring(txt.length() - 1) : "";
-                    if (lastChar.matches("[+\\-×÷%]")) {
+        btnClear.setOnClickListener(v -> {
+            String txt = inputTxt.getText().toString();
+            if (txt.length() > 0) {
+                String lastChar = txt.substring(txt.length() - 1);
+                if (lastChar.equals("(")) {
+                    leftBracket--;
+                } else if (lastChar.equals(")")) {
+                    rightBracket--;
+                }
+                txt = txt.substring(0, txt.length() - 1);
+                inputTxt.setText(txt);
+                lastChar = txt.length() > 0 ? txt.substring(txt.length() - 1) : "";
+                if (lastChar.matches("[+\\-×÷%]")) {
+                    outputTxt.setText("");
+                } else if (txt.length() == 0) {
+                    outputTxt.setText("0");
+                } else {
+                    String res = evaluateExpression(txt);
+                    if (!res.equals("Err")) {
+                        outputTxt.setText(res);
+                    } else {
                         outputTxt.setText("");
-                    } else if (txt.length() == 0) {
-                        outputTxt.setText("0");
-                    } else {
-                        String res = evaluateExpression(txt);
-                        if (!res.equals("Err")) {
-                            outputTxt.setText(res);
-                        } else {
-                            outputTxt.setText("");
-                            inputTxt.setText(txt);
-                        }
+                        inputTxt.setText(txt);
                     }
                 }
             }
         });
 
-        btnEqual.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String result = inputTxt.getText().toString();
-                if (result.length() > 0) {
-                    String lastChar = result.substring(result.length() - 1);
-                    if (lastChar.matches("[+\\-×÷()]")) {
-                        Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+        btnEqual.setOnClickListener(v -> {
+            String result = inputTxt.getText().toString();
+            if (result.length() > 0) {
+                String lastChar = result.substring(result.length() - 1);
+                if (lastChar.matches("[+\\-×÷()]")) {
+                    Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
+                    return;
                 }
-                result = evaluateExpression(inputTxt.getText().toString());
-                inputTxt.setText(result);
-                outputTxt.setText("");
             }
+            result = evaluateExpression(inputTxt.getText().toString());
+            inputTxt.setText(result);
+            outputTxt.setText("");
         });
     }
 
