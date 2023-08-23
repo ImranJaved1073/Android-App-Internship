@@ -51,11 +51,16 @@ public class MainActivity extends AppCompatActivity {
         btnList.add(findViewById(R.id.btn_divide));
         btnList.add(findViewById(R.id.btn_percent));
 
+        btnEqual = findViewById(R.id.btn_equals);
+        btnAllClear = findViewById(R.id.btn_allclear);
+        btnClear = findViewById(R.id.btn_clear);
+        btnbracket = findViewById(R.id.btn_bracket);
+
         for (final MaterialButton btn : btnList) {
             btn.setOnClickListener(v -> {
 
-                String btnTxt = btn.getText().toString();
-                data = inputTxt.getText().toString();
+                String btnTxt = btn.getText().toString(); //+
+                data = inputTxt.getText().toString(); // 56*(98
 
                 if (data.isEmpty() && btnTxt.matches("[+\\-×÷%]")) {
                     Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
@@ -66,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (data.length() > 0) {
-                    String lastChar = data.substring(data.length() - 1);
+                    String lastChar = data.substring(data.length() - 1); // 8
                     if (lastChar.matches("[+\\-×÷%]") && btnTxt.matches("[+\\-×÷%.]")) {
                         inputTxt.setText(data.substring(0, data.length() - 1) + btnTxt);
                         return;
@@ -76,14 +81,14 @@ public class MainActivity extends AppCompatActivity {
                     } else if (lastChar.equals(".")) {
                         if(btnTxt.equals("."))
                             return;
-                        else if(btnTxt.matches("[+\\-×÷%\\(\\)]")){
+                        else if(btnTxt.matches("[+\\-×÷%()]")){
                             inputTxt.setText(data.substring(0, data.length() - 1) + btnTxt);
                             return;
                         }
                     }
                 }
 
-                String concat = data + btnTxt;
+                String concat = data + btnTxt;// 56*(98+
                 inputTxt.setText(concat);
                 data = inputTxt.getText().toString();
                 String lastChar = data.substring(data.length() - 1);
@@ -110,11 +115,6 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-
-        btnEqual = findViewById(R.id.btn_equals);
-        btnAllClear = findViewById(R.id.btn_allclear);
-        btnClear = findViewById(R.id.btn_clear);
-        btnbracket = findViewById(R.id.btn_bracket);
 
         btnbracket.setOnClickListener(v -> {
             String txt = inputTxt.getText().toString();
@@ -188,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
             String result = inputTxt.getText().toString();
             if (result.length() > 0) {
                 String lastChar = result.substring(result.length() - 1);
-                if (lastChar.matches("[+\\-×÷()]")) {
+                if (lastChar.matches("[+\\-×÷(]")) {
                     Toast.makeText(MainActivity.this, "Invalid format used.", Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -209,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         expression = expression.replaceAll("÷", "/");
 
 
-        String cleanedExpression = removeUnmatchedOpenBrackets(expression);
+        String cleanedExpression = addMissingCloseBrackets(expression);
 
         try {
             Context rhino = Context.enter();
@@ -234,22 +234,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private static String removeUnmatchedOpenBrackets(String expression) {
-        Stack<Integer> stack = new Stack<>();
+    private static String addMissingCloseBrackets(String expression) {
+        Stack<Character> stack = new Stack<>();
         StringBuilder result = new StringBuilder(expression);
 
         for (int i = 0; i < result.length(); i++) {
             char c = result.charAt(i);
             if (c == '(') {
-                stack.push(i);
+                stack.push('(');
             } else if (c == ')' && !stack.isEmpty()) {
                 stack.pop();
             }
         }
 
         while (!stack.isEmpty()) {
-            int index = stack.pop();
-            result.deleteCharAt(index);
+            result.append(')');
+            stack.pop();
         }
 
         return result.toString();
