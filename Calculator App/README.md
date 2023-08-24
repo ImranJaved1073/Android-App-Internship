@@ -5,6 +5,7 @@
 - Subtraction
 - Multiplication
 - Division
+- Percentage
 
 ## Technologies Used
 
