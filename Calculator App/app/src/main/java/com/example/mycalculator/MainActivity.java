@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<MaterialButton> btnList = new ArrayList<>();
     MaterialButton btnEqual, btnClear, btnAllClear, btnbracket;
     TextView inputTxt, outputTxt;
-
     int leftBracket = 0, rightBracket = 0;
     String data;
 
